@@ -1,40 +1,39 @@
 <?php
 
 class FinalResult {
-    function results($f) {
-        $d = fopen($f, "r");
-        $h = fgetcsv($d);
-        $rcs = [];
-        while(!feof($d)) {
-            $r = fgetcsv($d);
-            if(count($r) == 16) {
-                $amt = !$r[8] || $r[8] == "0" ? 0 : (float) $r[8];
-                $ban = !$r[6] ? "Bank account number missing" : (int) $r[6];
-                $bac = !$r[2] ? "Bank branch code missing" : $r[2];
-                $e2e = !$r[10] && !$r[11] ? "End to end id missing" : $r[10] . $r[11];
-                $rcd = [
-                    "amount" => [
-                        "currency" => $h[0],
-                        "subunits" => (int) ($amt * 100)
-                    ],
-                    "bank_account_name" => str_replace(" ", "_", strtolower($r[7])),
-                    "bank_account_number" => $ban,
-                    "bank_branch_code" => $bac,
-                    "bank_code" => $r[0],
-                    "end_to_end_id" => $e2e,
-                ];
-                $rcs[] = $rcd;
+    function csvToBankHash($csvFile) {
+        $data = fopen($csvFile, "r");
+        $error_handler = fgetcsv($data);
+        $records = [];
+        while(!feof($data)) {
+            $row = fgetcsv($data);
+            if(count($row) == 16) {
+                $amount = !$row[8] || $row[8] == "0" ? 0 : (float) $row[8];
+        $bank_account_number = (int) $row[6] ?: "Bank account number missing";
+        $bank_branch_code = $row[2] ?: "Bank branch code missing";
+        $end_to_end = !$row[10] && !$row[11] ? "End to end id missing" : $row[10] . $row[11];
+        $record = [
+            "amount" => [
+                "currency" => $error_handler[0],
+                "subunits" => (int) ($amount * 100)
+            ],
+            "bank_account_name" => str_replace(" ", "_", strtolower($row[7])),
+            "bank_account_number" => $bank_account_number,
+            "bank_branch_code" => $bank_branch_code,
+            "bank_code" => $row[0],
+            "end_to_end_id" => $end_to_end,
+        ];
+            $records[] = $record;
             }
         }
-        $rcs = array_filter($rcs);
+        $rcs = array_filter($records);
         return [
-            "filename" => basename($f),
-            "document" => $d,
-            "failure_code" => $h[1],
-            "failure_message" => $h[2],
-            "records" => $rcs
+            "filename" => basename($csvFile),
+            "document" => $data,
+            "failure_code" => $error_handler[1],
+            "failure_message" => $error_handler[2],
+            "records" => $records
         ];
     }
 }
-
 ?>
